@@ -373,3 +373,4 @@ class LnbitsApi
         curl_close($ch);
     }
 }
+ 
