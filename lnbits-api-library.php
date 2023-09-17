@@ -165,7 +165,7 @@ class LnbitsApi
         $metadata = $lnobj->metadata;
         $callback = $lnobj->callback;
 
-        curl_close($lnch);
+        curl_close($lnch); 
 
         // create the description hash using the metadata
         $description_hash = hash('sha256', $metadata);
