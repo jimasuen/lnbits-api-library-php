@@ -207,6 +207,83 @@ class LnbitsApi
         curl_close($ch);
     }
 
+
+    //Pay lnurl
+    /**
+     * 
+     * $amount is to be written in millisats (amount of sats * 1000)
+     * 
+     * Function returns JSON object
+     * 
+     * {"success_action":"xyz",
+     * "payment_hash":"xyz",
+     * "checking_id":"xyz"}
+     */ 
+
+    function pay_lnurl($lnurl, $amount, $memo = "")
+    {
+
+        //Decode LNURL and retrieve the domain. Using existing function to do this
+
+        $api = new LnbitsApi($this->endpoint, $this->walletid, $this->adminkey, $this->invoicekey);
+
+        $obj = json_decode($api->decode_invoice($lnurl));
+        $domain = $obj->domain;
+
+        //Retrieve callback url and metadata from the domain
+        $lnch = curl_init($domain);
+        curl_setopt($lnch, CURLOPT_RETURNTRANSFER, true);
+
+        $lnresp = curl_exec($lnch);
+        curl_close($lnch);
+
+        $lnobj = json_decode($lnresp);
+
+        $metadata = $lnobj->metadata;
+        $callback = $lnobj->callback;
+
+        curl_close($lnch);
+
+        // create the description hash using the metadata
+        $description_hash = hash('sha256', $metadata);
+
+        //continue with processing payment
+
+        $url = $this->endpoint . "/api/v1/payments/lnurl";
+        $ch = curl_init($url);
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $headers = array(
+            "X-Api-Key: " . $this->adminkey,
+            "Content-type: application/json",
+        );
+
+        $data = array(
+            "description_hash" => $description_hash,
+            "callback" => $callback,
+            "amount" => $amount,
+            "comment" => $memo,
+            "description" =>  $memo
+        );
+
+        $data = json_encode($data);
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+        $response = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if ($code == 200) {
+            return $response;
+        } else {
+            return "Error " . $code;
+        }
+
+        curl_close($ch);
+    }
+
     // Decode an invoice
 
     /**
@@ -373,4 +450,3 @@ class LnbitsApi
         curl_close($ch);
     }
 }
- 
